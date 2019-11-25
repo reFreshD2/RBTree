@@ -2,186 +2,218 @@
 
 using namespace std;
 
-enum nodeColor {BLACK, RED};
+enum nodeColor {
+    BLACK, RED
+};
 
-template< class T>
-class RBTree{
-    struct node {
-        node* left = nullptr;
-        node* right = nullptr;
-        node* parent = nullptr;
+template<class T>
+class RBTree {
+    struct Node {
+        Node *left;
+        Node *right;
+        Node *parent;
         nodeColor color;
         T data;
         int countOfElem = 0;
     };
-    node* root;
+    Node *root;
+
+#define NIL &leaf
+    Node leaf = {nullptr, nullptr, nullptr, BLACK, 0};
+
+    Node *createNode(Node *parent, T key) {
+        Node *node = new Node;
+        node->data = key;
+        node->parent = parent;
+        node->left = NIL;
+        node->right = NIL;
+        node->color = RED;
+        node->countOfElem = 1;
+        return node;
+    }
 
 protected:
-    void rotateLeft(node *x) {
-        node *right = x->right;
+    void Transplant(Node *u, Node *v) {
+        if (u->parent == nullptr) {
+            root = v;
+        } else if (u == u->parent->left) {
+            u->parent->left = v;
+        } else {
+            u->parent->right = v;
+        }
+        v->parent = u->parent;
+    }
+
+    void rotateLeft(Node *x) {
+        Node *right = x->right;
         x->right = right->left;
-        if (right != nullptr) right->parent = x;
+        if (right != NIL) right->parent = x;
         right->parent = x->parent;
-        if (x->parent == nullptr) root = right;
+        if (x->parent == NIL) root = right;
         else if (x == x->parent->left) x->parent->left = right;
         else x->parent->right = right;
         right->left = x;
         x->parent = right;
     }
-    void rotateRight(node *x) {
-       node* left = x->left;
-       x->left = left->right;
-       if (x->left != nullptr) x->left->parent = x;
-       left->parent = x->parent;
-       if (x->parent == nullptr) root = left;
-       else if (x == x->parent->left) x->parent->left = left;
-       else x->parent->right = left;
-       left->right = x;
-       x->parent = left;
+
+    void rotateRight(Node *x) {
+        Node *left = x->left;
+        x->left = left->right;
+        if (x->left != NIL) x->left->parent = x;
+        left->parent = x->parent;
+        if (x->parent == NIL) root = left;
+        else if (x == x->parent->left) x->parent->left = left;
+        else x->parent->right = left;
+        left->right = x;
+        x->parent = left;
     }
-    void fixIns(node* x) {
-        node* parent = nullptr;
-        node* grand = nullptr;
-        while ((x != root) && (x->color!=BLACK) && (x->parent->color == RED)) {
+
+    void fixIns(Node *x) {
+        Node *parent;
+        Node *grand;
+        while ((x != root) && (x->color != BLACK) && (x->parent->color == RED)) {
             parent = x->parent;
             grand = x->parent->parent;
-            if (parent == grand->left){
-                node* uncle = grand->right;
-                if (uncle != nullptr && uncle->color == RED){
+            if (parent == grand->left) {
+                Node *uncle = grand->right;
+                if (uncle != NIL && uncle->color == RED) {
                     grand->color = RED;
                     parent->color = BLACK;
                     uncle->color = BLACK;
                     x = grand;
-                }
-                else {
+                } else {
                     if (x == parent->right) {
                         rotateLeft(parent);
                         x = parent;
                         parent = x->parent;
                     }
                     rotateRight(grand);
-                    swap(parent->color,grand->color);
+                    swap(parent->color, grand->color);
                     x = parent;
                 }
-            }
-            else {
-               node* uncle = grand->left;
-               if ((uncle != nullptr) && (uncle->color == RED)) {
-                   grand->color = RED;
-                   parent->color = BLACK;
-                   uncle->color = BLACK;
-                   x = grand;
-               }
-               rotateLeft(grand);
-               swap(parent->color,grand->color);
-               x = parent;
+            } else {
+                Node *uncle = grand->left;
+                if ((uncle != NIL) && (uncle->color == RED)) {
+                    grand->color = RED;
+                    parent->color = BLACK;
+                    uncle->color = BLACK;
+                    x = grand;
+                }
+                rotateLeft(grand);
+                swap(parent->color, grand->color);
+                x = parent;
             }
         }
         root->color = BLACK;
     }
-    void fixDel(node* x) {
-            while (x->color == BLACK && x != root) {
-                node *brother;
-                if (x->parent->left == x) {
-                    brother = x->parent->right;
-                    if (brother->color == RED) {
-                        brother->color = BLACK;
-                        x->parent->color = RED;
-                        rotateLeft(x->parent);
-                    }
-                    if (brother->left->color == BLACK && brother->right->color == RED) {
-                        brother->color = RED;
-                    } else {
-                        if (brother->right->color == BLACK) {
-                            brother->left->color = BLACK;
-                            brother->color = RED;
-                            rotateRight(brother);
-                        }
-                        brother->color = brother->parent->color;
-                        brother->parent->color = BLACK;
-                        brother->right->color = BLACK;
-                        rotateLeft(brother->parent);
-                        x = root;
-                    }
+
+    void fixDel(Node *x) {
+        while (x->color == BLACK && x != root) {
+            Node *brother;
+            if (x->parent->left == x) {
+                brother = x->parent->right;
+                if (brother->color == RED) {
+                    brother->color = BLACK;
+                    x->parent->color = RED;
+                    rotateLeft(x->parent);
+                }
+                if (brother->left->color == BLACK && brother->right->color == RED) {
+                    brother->color = RED;
                 } else {
-                    brother = x->parent->left;
-                    if (brother->color == RED) {
-                        brother->color = BLACK;
-                        brother->parent->color = RED;
-                        rotateRight(x->parent);
-                    }
-                    if (brother->left->color == BLACK && brother->right->color == RED) {
-                        brother->color = RED;
-                    } else {
-                        if (brother->left->color == BLACK) {
-                            brother->right->color = BLACK;
-                            brother->color = RED;
-                            rotateLeft(brother);
-                        }
-                        brother->color = brother->parent->color;
-                        brother->parent->color = BLACK;
+                    if (brother->right->color == BLACK) {
                         brother->left->color = BLACK;
-                        rotateRight(brother->parent);
-                        x = root;
+                        brother->color = RED;
+                        rotateRight(brother);
                     }
+                    brother->color = brother->parent->color;
+                    brother->parent->color = BLACK;
+                    brother->right->color = BLACK;
+                    rotateLeft(brother->parent);
+                    x = root;
                 }
-            }
-            x->color = BLACK;
-            root->color = BLACK;
-    }
-public:
-    RBTree(){
-        root = nullptr;
-    };
-    void insert (T key){
-    node* t = new node;
-    t->data = key;
-    t->color = RED;
-    t->countOfElem++;
-    if (this->root == nullptr) {
-        root = t;
-        t->parent = nullptr;
-    }
-    else {
-        node* p = root;
-        node* q = nullptr;
-        while (p != nullptr) {
-            q = p;
-            if (p->data < t->data) {
-                p = p->right;
             } else {
-                if (p->data > t->data) {
-                    p = p->left;
+                brother = x->parent->left;
+                if (brother->color == RED) {
+                    brother->color = BLACK;
+                    brother->parent->color = RED;
+                    rotateRight(x->parent);
+                }
+                if (brother->left->color == BLACK && brother->right->color == RED) {
+                    brother->color = RED;
                 } else {
-                    p->countOfElem++;
-                    return;
+                    if (brother->left->color == BLACK) {
+                        brother->right->color = BLACK;
+                        brother->color = RED;
+                        rotateLeft(brother);
+                    }
+                    brother->color = brother->parent->color;
+                    brother->parent->color = BLACK;
+                    brother->left->color = BLACK;
+                    rotateRight(brother->parent);
+                    x = root;
                 }
             }
         }
-        t->parent = q;
-        if (q->data < t->data) {
-            q->right = t;
-        }
-        else {
-            q->left = t;
+        x->color = BLACK;
+        root->color = BLACK;
+    }
+
+public:
+    RBTree() {
+        root = NIL;
+    };
+
+    void destroy(Node *node) {
+        if (node != NIL) {
+            destroy(node->left);
+            destroy(node->right);
+            delete node;
         }
     }
-    fixIns(t);
+
+    ~RBTree() {
+        destroy(root);
     }
-    node* search (T key) {
-        node* temp = root;
+
+    void insert(T key) {
+        Node *r = root;
+        Node *curr = NIL;
+        while (r != NIL) {
+            curr = r;
+            if (key < r->data) {
+                r = r->left;
+            } else if (key > r->data) {
+                r = r->right;
+            } else {
+                r->countOfElem++;
+                return;
+            }
+        }
+        Node *newNode = createNode(curr, key);
+        if (curr == NIL) {
+            root = newNode;
+        } else if (newNode->data < curr->data) {
+            curr->left = newNode;
+        } else {
+            curr->right = newNode;
+        }
+        fixIns(newNode);
+    }
+
+    Node *search(T key) {
+        Node *temp = root;
         bool end = false;
         while (end != true) {
-            if (key == temp->data){
+            if (key == temp->data) {
                 end = true;
             } else {
                 if (key > temp->data) {
-                    if (temp->right == nullptr) {
+                    if (temp->right == NIL) {
                         end = true;
                         temp = nullptr;
                     } else temp = temp->right;
                 } else {
-                    if (temp->left == nullptr) {
+                    if (temp->left == NIL) {
                         end = true;
                         temp = nullptr;
                     } else temp = temp->left;
@@ -190,78 +222,84 @@ public:
         }
         return temp;
     }
-    void deleteByKey (T key) {
-        if (root == nullptr) {
+
+    void deleteByKey(T key) {
+        if (root == NIL) {
             cout << "Tree is empty";
-        }
-        else {
-            node* delNode = search(key);
-            if (delNode->countOfElem == 1) {
-                deleteNode(delNode);
-            }
-            else {
-                delNode->countOfElem--;
+        } else {
+            Node *delNode = search(key);
+            if (delNode != nullptr) {
+                if (delNode->countOfElem == 1) {
+                    deleteNode(delNode);
+                } else {
+                    delNode->countOfElem--;
+                }
+            } else {
+                cout << "Key didn't find";
             }
         }
     }
-    void deleteNode (node* del) {
-        if (del->left == nullptr && del->right == nullptr) {
+
+    void deleteNode(Node *del) {
+        if (del->left == NIL && del->right == NIL) {
             if (del == root) {
-                root = nullptr;
-            }
-            else {
-                node* parent = del->parent;
-                if (parent->left == del) parent->left = nullptr;
-                else parent->right = nullptr;
+                root = NIL;
+            } else {
+                Node *parent = del->parent;
+                if (parent->left == del) parent->left = NIL;
+                else parent->right = NIL;
             }
             return;
         }
-        node* child;
-        if (del->right == nullptr || del->left == nullptr) {
-            node* parent = del->parent;
-            if (del->left == nullptr) child = del->right;
-            else child = del->left;
-            if (parent->left == del) parent->left = child;
-            else parent->right = child;
-            child->parent = parent;
-        }
-        else {
-            node* temp = del->right;
-            while (temp->left != nullptr) temp = temp->left;
-            del->data = temp->data;
-            del->countOfElem = temp->countOfElem;
-            deleteNode(temp);
-           /* if (temp->right != nullptr) {
-                temp->right->parent = temp->parent;
-                if (temp->parent->left == temp) temp->parent->left = temp->right;
-                temp->parent->right = temp->right;
+        Node *child; //x
+        Node *current = del; // y
+        nodeColor color = current->color; //c
+        if (del->right == NIL || del->left == NIL) {
+            if (del->right == NIL) {
+                child = del->left;
+                Transplant(del, del->left);
+            } else {
+                child = del->right;
+                Transplant(del, del->right);
             }
-            else {
-                if (temp->parent->left == temp) temp->parent->left = nullptr;
-                temp->parent->right = nullptr;
-            }*/
-            if (del->left == nullptr) child = del->right;
-            else child = del->left;
+        } else {
+            Node *temp = del->right;
+            while (temp->left != NIL) temp = temp->left;
+            current = temp;
+            color = current->color;
+            child = current->right;
+            if (current->parent == del) {
+                child->parent = current;
+            } else {
+                Transplant(current, current->right);
+                current->right = del->right;
+                current->right->parent = current;
+            }
+            Transplant(del, current);
+            current->left = del->left;
+            current->left->parent = current;
+            current->color = del->color;
         }
-        if (del->color == BLACK) {
+        if (color == BLACK) {
             fixDel(child);
             delete del;
         }
     }
-    void print(node* x){
-        if (x) {
+
+    void print(Node *x) {
+        if (x != NIL) {
             print(x->left);
             cout << x->data;
             if (x->color == RED) {
                 cout << "R|c:" << x->countOfElem << " ";
-            }
-            else {
+            } else {
                 cout << "B|c:" << x->countOfElem << " ";
             }
             print(x->right);
         }
     }
-    node* getRoot(){
+
+    Node *getRoot() {
         return this->root;
     }
 };
